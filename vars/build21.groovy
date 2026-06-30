@@ -20,7 +20,11 @@ def call(body) {
             booleanParam(name: 'PRODUCTION_BUILD', defaultValue: false, description: '')
             string(name: 'ISSUE_KEY', defaultValue: '', description: '')
             string(name: 'PASSWORD', defaultValue: '', description: '')
+            booleanParam(name: 'ROLLBACK', defaultValue: false, description: 'Enable rollback from Nexus')
+            string(name: 'ROLLBACK_FILE', defaultValue: '', description: 'Enter WAR file name (e.g., api-tracker-2026-04-21_10-30-00.war)')
+
             //password(name: 'PASSWORD', defaultValue: '', description: '')
+            
         }
         stages {
             stage('Checkout') {
@@ -48,7 +52,7 @@ def call(body) {
           	//jdk 'JAVA_HOME'
           //}
                 when {
-                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'  && env.BRANCH_NAME != 'production2' }
+                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'  && env.BRANCH_NAME != 'production2' || !params.ROLLBACK }
                 }
                 steps {
                     log("Build")
@@ -86,7 +90,7 @@ def call(body) {
             stage('Code Quality analysis') {
                  when {
                      allOf {
-                         expression { true }
+                         expression { false }
                          anyOf {
                              branch 'staging'
                              branch 'production'
@@ -186,8 +190,7 @@ Please review the CodeScanner Dashboard for details.
             }
             stage('Deploy') {
                 when {
-                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr' && env.BRANCH_NAME != 'production2'}
-                }
+                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr' && env.BRANCH_NAME != 'production2' || false  }}
                 steps {
                     script {
                        if ( pipelineParams.build_env != 'grunt'){
