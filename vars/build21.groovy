@@ -65,7 +65,7 @@ def call(body) {
                       }
                       else {
                       		//sh "mvn clean install ${getMavenArgs(pipelineParams)} -U -Dmaven.test.skip=true clean install -X" 
-                            sh "mvn -s /usr/local/apache-maven-3.9.9/conf/settings.xml -Dmaven.test.skip=true clean install -X"
+                            sh "mvn -Dmaven.test.skip=true clean install -X"
                       }
                     
 					}
