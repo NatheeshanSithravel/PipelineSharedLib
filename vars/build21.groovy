@@ -4,6 +4,7 @@ def call(body) {
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = pipelineParams
     body()
+    def CodeScan = pipelineParams.CodeScan ?: false
 
     pipeline {
         agent any
@@ -19,6 +20,7 @@ def call(body) {
             booleanParam(name: 'PRODUCTION_BUILD', defaultValue: false, description: '')
             string(name: 'ISSUE_KEY', defaultValue: '', description: '')
             string(name: 'PASSWORD', defaultValue: '', description: '')
+            //password(name: 'PASSWORD', defaultValue: '', description: '')
         }
         stages {
             stage('Checkout') {
@@ -46,11 +48,11 @@ def call(body) {
           	//jdk 'JAVA_HOME'
           //}
                 when {
-                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'}
+                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'  && env.BRANCH_NAME != 'production2' }
                 }
                 steps {
                     log("Build")
-                    log("*************This is a "+getBuildEnv(pipelineParams)+" build ****************")
+                    log("*************Ths is a "+getBuildEnv(pipelineParams)+" build ****************")
                     //sh "mvn clean install ${getMavenArgs(pipelineParams)} -U -Dmaven.test.skip=true "
 					script{
                       
@@ -58,9 +60,8 @@ def call(body) {
                       		sh "grunt war"
                       }
                       else {
-                            log("Branch name is: ${env.BRANCH_NAME}")
                       		//sh "mvn clean install ${getMavenArgs(pipelineParams)} -U -Dmaven.test.skip=true clean install -X" 
-                            sh "mvn -Dmaven.test.skip=true clean install -X"
+                            sh "mvn -s /usr/local/apache-maven-3.9.9/conf/settings.xml -Dmaven.test.skip=true clean install -X"
                       }
                     
 					}
@@ -80,24 +81,98 @@ def call(body) {
                     }
                 }
             }
-             stage('SonarQube analysis') {
+          
+          
+            stage('Code Quality analysis') {
+                 when {
+                     allOf {
+                         expression { true }
+                         anyOf {
+                             branch 'staging'
+                             branch 'production'
+                        }
+                     }
+               }
+                  steps {
+                      script {
+                          def scannerHome = tool 'sonar-scanner'
+                          def sonarServer = ''
+
+                          if (env.BRANCH_NAME == 'staging') {
+                               sonarServer = 'Sonar server'
+                          } else if (env.BRANCH_NAME == 'production') {
+                              sonarServer = 'sonar-server-prod'
+                          }
+
+                          withSonarQubeEnv(sonarServer) {
+                              sh "${scannerHome}/bin/sonar-scanner -Dsonar.sources=. -Dsonar.java.binaries=. -Dsonar.projectKey=${pipelineParams.projectName} -Dsonar.projectName=${pipelineParams.projectName}-JBoss"
+                          }
+                      }
+                  }
+               }
+          
+          
+      /*       stage('Quality Gate') {
                 when {
-                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'}
-                }
-                steps  {
-                    script {
-                        scannerHome = tool 'Sonarqube mobitel'
-                      log("SonarQube")
+                    expression { CodeScan == true }
                     }
-                    log("SonarQube")
-                    withSonarQubeEnv('Sonar server') {
-                       sh "${scannerHome}/bin/sonar-scanner -Dsonar.sources=./src -Dsonar.java.binaries=. -Dsonar.projectKey=${pipelineParams.projectName} -Dsonar.projectName=${pipelineParams.projectName}"
+                agent any
+                steps {
+                  script {
+                      try {
+                // Retry if SonarQube response is slow
+                retry(2) {
+                    timeout(time: 30, unit: 'SECONDS') {
+                        def qg = waitForQualityGate abortPipeline: true
+                        echo "Quality Gate status: ${qg.status}"
                     }
                 }
-            } 
+                  } catch (err) {
+
+                    echo "Quality Gate stage failed: ${err}"
+
+                     def sonarURL = "http://codescanner-stg.mobitel.lk/dashboard?id=${pipelineParams.projectName}"
+
+                // Run node block for workspace operations
+                    node {
+
+                    // Checkout repository
+                    checkout scm
+
+                    // Get committer email
+                    env.COMMITTER_EMAIL = sh(
+                        script: "git log -1 --pretty=format:'%ce'",
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Committer Email: ${env.COMMITTER_EMAIL}"
+
+                    // Send failure notification
+                    mail to: "${env.COMMITTER_EMAIL}",
+                         subject: "Jenkins Pipeline Alert: Code Quality Gate Failed",
+                         body: """Hello Team,
+
+THE CODE QUALITY GATE HAS FAILED
+
+Project: ${env.JOB_NAME}
+Build URL: ${env.BUILD_URL}
+CodeScanner URL: ${sonarURL}
+
+Please review the CodeScanner Dashboard for details.
+"""
+                }
+
+                currentBuild.result = 'FAILURE'
+                error "Stopping pipeline due to Quality Gate failure"
+            }
+        }
+    }
+}         */ 
+          
+          
             stage('Publish') {
                 when {
-                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'}
+                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr' && env.BRANCH_NAME != 'production2'  }
                 }
                 steps {
                     script {
@@ -108,19 +183,21 @@ def call(body) {
                     log("Publish")
                    // sh "mvn deploy:deploy-file -DrepositoryId=${nexusRepo(env.BRANCH_NAME)} -DgroupId=${pom.groupId} -DartifactId=${pom.artifactId} -Dversion=${version(env.BRANCH_NAME, pom.version, currentBuild.number)} -DgeneratePom=true -Dpackaging=${pom.packaging} -Durl=http://192.168.1.18:8081/nexus/content/repositories/${nexusRepo(env.BRANCH_NAME)} -Dfile=target/${getArtifactName(pom)}"
                 }
-            } 
+            }
             stage('Deploy') {
                 when {
-                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'}
+                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr' && env.BRANCH_NAME != 'production2'}
                 }
                 steps {
                     script {
                        if ( pipelineParams.build_env != 'grunt'){
                         pom = readMavenPom file: 'pom.xml'
                        }
+                      def deployEnv = pipelineParams.deployEnv ?: env.BRANCH_NAME
+					  deploy(deployEnv, pipelineParams, pom)
                     }
-                   log(env.BRANCH_NAME)
-                    deploy(env.BRANCH_NAME, pipelineParams, pom)
+                    // deploy(env.BRANCH_NAME, pipelineParams, pom)
+                  	
                 }
             }
         }

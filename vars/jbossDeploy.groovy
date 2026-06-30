@@ -8,7 +8,6 @@ def call(def branch, def pipelineParams, def pom) {
     } else {
         configName = pipelineParams."${branch}ConfigName"
         cluster = pipelineParams."${branch}ClusterName"
-  
     }
     if (pipelineParams.standalone) {
         standalone = pipelineParams.standalone
@@ -31,7 +30,7 @@ def call(def branch, def pipelineParams, def pom) {
                         sourceFiles:    "target/${getArtifactName(pom)}",
                         removePrefix:   "target",
                         execCommand:    "mv ${jbossPath(configName)}/${standalone}/deployments/${getArtifactName(pom)} backup/ > /dev/null || : ; " +
-                                        "cp /apps/${getArtifactName(pom)} ${jbossPath(configName)}/${standalone}/deployments/ > /dev/null || : ; " +
+                                        "cp /apps/${getArtifactName(pom)} ${jbossPath(configName)}/${standalone}/deployments/ > /dev/null || : ; "  +
                                         "rm /apps/${getArtifactName(pom)} > /dev/null || : ; "
                 )
             ]
@@ -67,9 +66,8 @@ def call(def branch, def pipelineParams, def pom) {
                         sourceFiles:    "target/${getArtifactName(pom)}",
                         removePrefix:   "target",
                         execCommand:    "${jbossPath(configName)}/bin/jboss-cli.sh --controller=${jbossController(configName)} --connect --command='undeploy ${getArtifactName(pom)} --server-groups=${cluster}'; " +
-                                        "${jbossPath(configName)}/bin/jboss-cli.sh --controller=${jbossController(configName)} --connect --command='deploy /apps/${getArtifactName(pom)} --server-groups=${cluster}'; " +
-                                         "rm /apps/${getArtifactName(pom)}"
-                                        
+                                        "${jbossPath(configName)}/bin/jboss-cli.sh --controller=${jbossController(configName)} --connect --command='deploy /apps/${getArtifactName(pom)} --server-groups=${cluster}'; " 
+                                         
                 )
             ]
             )

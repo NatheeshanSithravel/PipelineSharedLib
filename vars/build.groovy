@@ -4,6 +4,7 @@ def call(body) {
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = pipelineParams
     body()
+    def CodeScan = pipelineParams.CodeScan ?: true
 
     pipeline {
         agent any
@@ -34,6 +35,7 @@ def call(body) {
             booleanParam(name: 'PRODUCTION_BUILD', defaultValue: false, description: '')
             string(name: 'ISSUE_KEY', defaultValue: '', description: '')
             string(name: 'PASSWORD', defaultValue: '', description: '')
+          //password(name: 'PASSWORD', defaultValue: '', description: '')
         }
         stages {
             stage('Checkout') {
@@ -93,20 +95,35 @@ def call(body) {
                     }
                 }
             }
-            stage('SonarQube analysis') {
-                when {
-                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'}
-                }
-                steps  {
-                    script {
-                        scannerHome = tool 'Sonarqube mobitel'
-                    }
-                    log("SonarQube")
-                    withSonarQubeEnv('Sonar server') {
-                      // sh "${scannerHome}/bin/sonar-scanner -Dsonar.sources=./src -Dsonar.java.binaries=. -Dsonar.projectKey=${pipelineParams.projectName} -Dsonar.projectName=${pipelineParams.projectName}"
-                    }
-                }
-            }
+          
+            stage('Code Quality analysis') {
+                 when {
+                     allOf {
+                         expression { CodeScan == true }
+                         anyOf {
+                             branch 'staging'
+                             branch 'production'
+                        }
+                     }
+               }
+                  steps {
+                      script {
+                          def scannerHome = tool 'sonar-scanner'
+                          def sonarServer = ''
+
+                          if (env.BRANCH_NAME == 'staging') {
+                               sonarServer = 'Sonar server'
+                          } else if (env.BRANCH_NAME == 'production') {
+                              sonarServer = 'sonar-server-prod'
+                          }
+
+                          withSonarQubeEnv(sonarServer) {
+                              sh "${scannerHome}/bin/sonar-scanner -Dsonar.sources=. -Dsonar.java.binaries=. -Dsonar.projectKey=${pipelineParams.projectName} -Dsonar.projectName=${pipelineParams.projectName}-JBoss"
+                          }
+                      }
+                  }
+               }
+          
             stage('Publish') {
                 when {
                     expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'}

@@ -9,7 +9,7 @@ def call(body) {
         agent any
         tools {
           maven 'Maven 3.2.5'
-          jdk 'JDK_11'
+          jdk 'JDK-8u202'
          
         }
       	options {
@@ -40,7 +40,7 @@ def call(body) {
         //	cluster = pipelineParams."${branch}ClusterName"
         //  }
         //  if ( configName == 'ipgtestNew.mobitel.lk-DR'){
-           	
+         //  	
          //   jdk 'JDK_11'
          // }
           //else{

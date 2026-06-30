@@ -37,7 +37,7 @@ def call(def configName) {
         "172.16.243.14"
     } else if (configName == "mCashProdJB12C") {
         "192.168.43.84"
-    } else if (configName == "testjbossnewdc") {
+    } else if (configName == "IntApps-JBoss8-DC") {
         "192.168.1.210"
     } else if (configName == "testjbossnewdc-DR") {
         "172.27.41.210"
@@ -54,7 +54,7 @@ def call(def configName) {
     } else if (configName == "JBoss-MADP-Prod") {
         "192.168.1.37"
     } else if (configName == "ECL-Test-JBossDC") {
-        "10.10.20.39"
+        "172.26.145.37"
     } else if (configName == "FinX_JBossDC") {
         "192.168.43.195"
     } else if (configName == "Test_FinX_JBossDC") {
@@ -71,8 +71,20 @@ def call(def configName) {
         "192.168.1.210"
     }else if (configName == "ECL_JBossDC") {
         "172.26.243.110"
-    }else if (configName == "api-set-tracker") {
-         "192.168.6.210" 
-    }
+    }else if (configName == "JBoss_Temp_DC_Test") {
+        "172.27.41.215"
+    }else if (configName == "Railway_Temp_DC_Test") {
+        "172.26.243.123"
+    }else if (configName == "JBoss-MADPDC-Test") {
+        "172.26.243.65"
+    }else if (configName == "jbossDCNew.mobitel.lk-DR-Clone") {
+        "172.27.41.71"
+    }else if (configName == "JBoss-MADPDC-Prod") {
+        "172.16.243.117"
+    }else if (configName == "Test_FinX_JBossDC_Clone") {
+        "172.27.43.215"
+    }else if (configName == "Jboss-Mobitel-SLT-DC") {
+        "192.168.1.159"
+    } 
   
 }

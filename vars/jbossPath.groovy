@@ -30,11 +30,11 @@ def call(def configName) {
     } else if (configName == "jbosscgdc.mobitel.lk-DR") {
         "/apps/jboss-eap-7.4"
     } else if (configName == "CRM_DC") {
-        "/apps/jboss-eap-7.1"
+        "/apps/jboss-eap-7.4"
     } else if (configName == "CRM_DC-DR") {
         "/apps/jboss-eap-7.1"
     } else if (configName == "JBoss7DC-DMZ") {
-        "/apps/jboss-eap-7.1"
+        "/apps/jboss-eap-7.4"
     } else if (configName == "JBoss7DC-DMZ-DR") {
         "/apps/jboss-eap-7.1"
     } else if (configName == "jboss7test-DMZ") {
@@ -44,11 +44,11 @@ def call(def configName) {
     } else if (configName == "testjbossnewdc") {
         "/apps/jboss-eap-7.1"
     } else if (configName == "testjbossnewdc-DR") {
-        "/apps/jboss-eap-7.1"
+        "/apps/jboss-eap-7.4"
     } else if (configName == "railwaytestdc") {
-        "/apps/jboss-eap-7.1"
+        "/apps/jboss-eap-7.4"
     } else if (configName == "railwaytestdc-DR") {
-        "/apps/jboss-eap-7.1"
+        "/apps/jboss-eap-7.4"
     } else if (configName == "JbossTelcoDC") {
         "/apps/jboss-eap-7.1"
     } else if (configName == "mCashDC-DR") {
@@ -60,9 +60,9 @@ def call(def configName) {
     } else if (configName == "ECL-Test-JBossDC") {
         "/apps/jboss-eap-7.4"
     }  else if (configName == "FinX_JBossDC") {
-        "/apps/jboss-eap-7.4"
+        "/apps/jboss-eap-8.0"
     } else if (configName == "Test_FinX_JBossDC") {
-        "/apps/jboss-eap-7.4"
+        "/apps/jboss-eap-8.0"
     } else if (configName == "ECL_CRM-JBossDC") {
         "/apps/jboss-eap-7.4"
     } else if (configName == "mCash-JBoss8-Test-DC") {
@@ -74,8 +74,20 @@ def call(def configName) {
     }else if (configName == "IntApps-JBoss8-DC") {
         "/apps/jboss-eap-8.0"
     }else if (configName == "ECL_JBossDC") {
-        "/apps/jboss-eap-7.2"
-    }else if (configName == "api-set-tracker"){
-        "/apps/jboss-eap-8.0" 
+        "/apps/jboss-eap-7.4"
+    }else if (configName == "JBoss_Temp_DC_Test") {
+        "/apps/jboss-eap-8.0"
+    }else if (configName == "Railway_Temp_DC_Test") {
+        "/apps/jboss-eap-7.4"
+    }else if (configName == "JBoss-MADPDC-Test") {
+        "/apps/jboss-eap-8.0"
+    }else if (configName == "jbossDCNew.mobitel.lk-DR-Clone") {
+        "/apps/jboss-eap-8.0"
+    } else if (configName == "JBoss-MADPDC-Prod") {
+        "/apps/jboss-eap-8.0"
+    } else if (configName == "Test_FinX_JBossDC_Clone") {
+        "/apps/jboss-eap-8.0"
+    } else if (configName == "Jboss-Mobitel-SLT-DC") {
+        "/apps/jboss-eap-7.4"
     }
 }
