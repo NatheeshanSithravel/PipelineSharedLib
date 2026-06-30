@@ -8,11 +8,11 @@ def call(body) {
 
     pipeline {
         agent any
-        tools {
+       // tools {
         //  maven 'Maven 3.9.9'
         //  jdk 'JDK_21'
          
-        }
+        // }
       	options {
     		buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '15'))
   		}
