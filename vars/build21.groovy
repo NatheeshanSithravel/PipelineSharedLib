@@ -8,11 +8,11 @@ def call(body) {
 
     pipeline {
         agent any
-        tools {
-          maven 'Maven 3.9.9'
-          jdk 'JDK_21'
+       // tools {
+        //  maven 'Maven 3.9.9'
+        //  jdk 'JDK_21'
          
-        }
+        // }
       	options {
     		buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '15'))
   		}
@@ -73,7 +73,7 @@ def call(body) {
                       }
                       else {
                       		//sh "mvn clean install ${getMavenArgs(pipelineParams)} -U -Dmaven.test.skip=true clean install -X" 
-                            sh "mvn -s /usr/local/apache-maven-3.9.9/conf/settings.xml -Dmaven.test.skip=true clean install -X"
+                            sh "mvn -Dmaven.test.skip=true clean install -X"
                       }
                     
 					}
