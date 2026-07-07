@@ -126,6 +126,7 @@ def call(body) {
                stage('Upload with Timestamp') {
     steps {
         script {
+            def pom = readMavenPom file: 'pom.xml'
             def file = "target/${getArtifactName(pom)}"
 
             sh """
@@ -136,7 +137,7 @@ def call(body) {
                 TIMESTAMP=\$(date +"%Y-%m-%d_%H-%M-%S")
                 FILE_NAME="${pipelineParams.projectName}-\$TIMESTAMP.war"
 
-                echo "⬆️ Uploading \$FILE_NAME"
+                echo "Uploading \$FILE_NAME"
 
                 curl -s -u $CREDS \
                     --upload-file ${file} \
