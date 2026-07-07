@@ -8,11 +8,11 @@ def call(body) {
 
     pipeline {
         agent any
-        tools {
-          maven 'Maven 3.9.9'
-          jdk 'JDK_21'
+      //  tools {
+      //    maven 'Maven 3.9.9'
+      //    jdk 'JDK_21'
          
-        }
+     //   }
       	options {
     		buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '15'))
   		}
@@ -20,6 +20,8 @@ def call(body) {
             booleanParam(name: 'PRODUCTION_BUILD', defaultValue: false, description: '')
             string(name: 'ISSUE_KEY', defaultValue: '', description: '')
             string(name: 'PASSWORD', defaultValue: '', description: '')
+			booleanParam(name: 'ROLLBACK', defaultValue: false, description: 'Enable rollback from Nexus')
+            string(name: 'ROLLBACK_FILE', defaultValue: '', description: 'Enter WAR file name (e.g., api-tracker-2026-04-21_10-30-00.war)')
             //password(name: 'PASSWORD', defaultValue: '', description: '')
         }
         stages {
@@ -48,7 +50,11 @@ def call(body) {
           	//jdk 'JAVA_HOME'
           //}
                 when {
-                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'  && env.BRANCH_NAME != 'production2' }
+                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
+						         (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') ||
+						         (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
+						          env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'  && env.BRANCH_NAME != 'production2' ||
+						          !params.ROLLBACK}
                 }
                 steps {
                     log("Build")
@@ -61,7 +67,7 @@ def call(body) {
                       }
                       else {
                       		//sh "mvn clean install ${getMavenArgs(pipelineParams)} -U -Dmaven.test.skip=true clean install -X" 
-                            sh "mvn -s /usr/local/apache-maven-3.9.9/conf/settings.xml -Dmaven.test.skip=true clean install -X"
+                            sh "mvn -Dmaven.test.skip=true clean install -X"
                       }
                     
 					}
@@ -173,7 +179,10 @@ Please review the CodeScanner Dashboard for details.
           
             stage('Publish') {
                 when {
-                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr' && env.BRANCH_NAME != 'production2'  }
+                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
+						        (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') ||
+						        (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
+						        env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr' && env.BRANCH_NAME != 'production2'  }
                 }
                 steps {
                     script {
@@ -187,7 +196,10 @@ Please review the CodeScanner Dashboard for details.
             }
             stage('Deploy') {
                 when {
-                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr' && env.BRANCH_NAME != 'production2'}
+                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
+						         (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') ||
+						         (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
+						          env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr' && env.BRANCH_NAME != 'production2' }
                 }
                 steps {
                     script {
