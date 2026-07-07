@@ -16,7 +16,6 @@ def call(body) {
         environment {
         NEXUS_URL = "http://192.168.56.103:8081"
         REPO = "raw-war-backup"
-        FILE = "target/${getArtifactName(pom)}"
         CREDS = "admin:admin"
         }
       	options {
@@ -125,24 +124,27 @@ def call(body) {
                }
 
                stage('Upload with Timestamp') {
-            steps {
-                sh '''
+    steps {
+        script {
+            def file = "target/${getArtifactName(pom)}"
+
+            sh """
                 set -e
 
                 BASE_URL=$NEXUS_URL/repository/$REPO/${pipelineParams.projectName}
 
-                # Generate timestamp
-                TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
-                FILE_NAME="${pipelineParams.projectName}-$TIMESTAMP.war"
+                TIMESTAMP=\$(date +"%Y-%m-%d_%H-%M-%S")
+                FILE_NAME="${pipelineParams.projectName}-\$TIMESTAMP.war"
 
-                echo "⬆️ Uploading $FILE_NAME"
+                echo "⬆️ Uploading \$FILE_NAME"
 
                 curl -s -u $CREDS \
-                --upload-file $FILE \
-                "$BASE_URL/$FILE_NAME"
-                '''
-            }
+                    --upload-file ${file} \
+                    "\$BASE_URL/\$FILE_NAME"
+            """
         }
+    }
+}
           
           
       /*       stage('Quality Gate') {
