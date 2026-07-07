@@ -13,6 +13,12 @@ def call(body) {
       //    jdk 'JDK_21'
          
      //   }
+        environment {
+        NEXUS_URL = "http://192.168.56.103:8081"
+        REPO = "raw-war-backup"
+        FILE = "target/${getArtifactName(pom)}"
+        CREDS = "admin:admin"
+        }
       	options {
     		buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '15'))
   		}
@@ -92,7 +98,7 @@ def call(body) {
             stage('Code Quality analysis') {
                  when {
                      allOf {
-                         expression { true }
+                         expression { false }
                          anyOf {
                              branch 'staging'
                              branch 'staging2'
@@ -117,6 +123,26 @@ def call(body) {
                       }
                   }
                }
+
+               stage('Upload with Timestamp') {
+            steps {
+                sh '''
+                set -e
+
+                BASE_URL=$NEXUS_URL/repository/$REPO/${pipelineParams.projectName}
+
+                # Generate timestamp
+                TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+                FILE_NAME="${pipelineParams.projectName}-$TIMESTAMP.war"
+
+                echo "⬆️ Uploading $FILE_NAME"
+
+                curl -s -u $CREDS \
+                --upload-file $FILE \
+                "$BASE_URL/$FILE_NAME"
+                '''
+            }
+        }
           
           
       /*       stage('Quality Gate') {
