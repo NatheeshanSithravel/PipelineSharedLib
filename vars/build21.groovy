@@ -8,11 +8,11 @@ def call(body) {
 
     pipeline {
         agent any
-       // tools {
-        //  maven 'Maven 3.9.9'
-        //  jdk 'JDK_21'
+        tools {
+          maven 'Maven 3.9.9'
+          jdk 'JDK_21'
          
-        // }
+        }
       	options {
     		buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '15'))
   		}
@@ -20,20 +20,8 @@ def call(body) {
             booleanParam(name: 'PRODUCTION_BUILD', defaultValue: false, description: '')
             string(name: 'ISSUE_KEY', defaultValue: '', description: '')
             string(name: 'PASSWORD', defaultValue: '', description: '')
-            booleanParam(name: 'ROLLBACK', defaultValue: false, description: 'Enable rollback from Nexus')
-            string(name: 'ROLLBACK_FILE', defaultValue: '', description: 'Enter WAR file name (e.g., api-tracker-2026-04-21_10-30-00.war)')
-
             //password(name: 'PASSWORD', defaultValue: '', description: '')
-            
         }
-        environment {
-        NEXUS_URL = "http://192.168.56.103:8081"
-        REPO = "raw-war-backup"
-        FILE = "target/${getArtifactName(pipelineParams)}"
-        CREDS = "admin:admin"
-        BASE_PATH = "${pipelineParams.projectName}/${env.BRANCH_NAME}"
-        }
-
         stages {
             stage('Checkout') {
                 steps {
@@ -60,7 +48,7 @@ def call(body) {
           	//jdk 'JAVA_HOME'
           //}
                 when {
-                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'  && env.BRANCH_NAME != 'production2' || !params.ROLLBACK }
+                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'  && env.BRANCH_NAME != 'production2' }
                 }
                 steps {
                     log("Build")
@@ -73,7 +61,7 @@ def call(body) {
                       }
                       else {
                       		//sh "mvn clean install ${getMavenArgs(pipelineParams)} -U -Dmaven.test.skip=true clean install -X" 
-                            sh "mvn -Dmaven.test.skip=true clean install -X"
+                            sh "mvn -s /usr/local/apache-maven-3.9.9/conf/settings.xml -Dmaven.test.skip=true clean install -X"
                       }
                     
 					}
@@ -98,9 +86,10 @@ def call(body) {
             stage('Code Quality analysis') {
                  when {
                      allOf {
-                         expression { false }
+                         expression { true }
                          anyOf {
                              branch 'staging'
+                             branch 'staging2'
                              branch 'production'
                         }
                      }
@@ -110,7 +99,7 @@ def call(body) {
                           def scannerHome = tool 'sonar-scanner'
                           def sonarServer = ''
 
-                          if (env.BRANCH_NAME == 'staging') {
+                          if (env.BRANCH_NAME == 'staging' || env.BRANCH_NAME == 'staging2') {
                                sonarServer = 'Sonar server'
                           } else if (env.BRANCH_NAME == 'production') {
                               sonarServer = 'sonar-server-prod'
@@ -180,46 +169,8 @@ Please review the CodeScanner Dashboard for details.
         }
     }
 }         */ 
-            
-            stage('Upload with Timestamp') {
-            when { expression { !params.ROLLBACK } }
-            steps {
-                sh '''
-                set -e
-
-                BASE_URL=$NEXUS_URL/repository/$REPO/$BASE_PATH
-                TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
-                FILE_NAME="${pipelineParams.projectName}-$TIMESTAMP.war"
-
-                echo "⬆️ Uploading $FILE_NAME"
-
-                curl -s -u $CREDS \
-                --upload-file $FILE \
-                "$BASE_URL/$FILE_NAME"
-                '''
-            }
-        }
-            stage('Download Rollback Artifact') {
-            when { expression { params.ROLLBACK } }
-            steps {
-                sh '''
-                set -e
-
-                if [ "$ROLLBACK_FILE" = "-- Rollback disabled --" ] || [ -z "$ROLLBACK_FILE" ]; then
-                    echo "❌ Please select a valid rollback file"
-                    exit 1
-                fi
-
-                BASE_URL=$NEXUS_URL/repository/$REPO/$BASE_PATH
-
-                echo "⬇️ Downloading $ROLLBACK_FILE"
-
-                curl -f -u $CREDS \
-                -o rollback.war \
-                "$BASE_URL/$ROLLBACK_FILE"
-                '''
-            }
-        }
+          
+          
             stage('Publish') {
                 when {
                     expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr' && env.BRANCH_NAME != 'production2'  }
@@ -235,33 +186,29 @@ Please review the CodeScanner Dashboard for details.
                 }
             }
             stage('Deploy') {
-                 when {
-                      expression {
-                        (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
-                        (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') ||
-                        (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
-                        (env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr' && env.BRANCH_NAME != 'production2')
-                   }
-                   }
-             steps {
-                 script {
-                    if (pipelineParams.build_env != 'grunt') {
-                       pom = readMavenPom file: 'pom.xml'
-                   }
-
-                   if (params.ROLLBACK) {
-                   echo "Deploying rollback artifact"
-
-                    sh '''
-                     mkdir -p target
-                     cp rollback.war target/${getArtifactName(pipelineParams)}
-                      '''
-                  }
-
-                   def deployEnv = pipelineParams.deployEnv ?: env.BRANCH_NAME
-            deploy(deployEnv, pipelineParams, pom)
-           }
-       }
-    
-
+                when {
+                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') || (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') || env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr' && env.BRANCH_NAME != 'production2'}
+                }
+                steps {
+                    script {
+                       if ( pipelineParams.build_env != 'grunt'){
+                        pom = readMavenPom file: 'pom.xml'
+                       }
+                      def deployEnv = pipelineParams.deployEnv ?: env.BRANCH_NAME
+					  deploy(deployEnv, pipelineParams, pom)
+                    }
+                    // deploy(env.BRANCH_NAME, pipelineParams, pom)
+                  	
+                }
+            }
+        }
+        post {
+            failure {
+                jiraUpdate(params.ISSUE_KEY, 31, env, currentBuild)
+            }
+            success {
+                jiraUpdate(params.ISSUE_KEY, 21, env, currentBuild)
+            }
+        }
+    }
 }
