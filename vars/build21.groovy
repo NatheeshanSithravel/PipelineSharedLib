@@ -139,7 +139,7 @@ def call(body) {
                 BASE_URL=$NEXUS_URL/repository/$REPO/${pipelineParams.projectName}
 
                 TIMESTAMP=\$(date +"%Y-%m-%d_%H-%M-%S")
-                FILE_NAME="${pipelineParams.projectName}-\$TIMESTAMP.war"
+                FILE_NAME="${pom.artifactId}-$TIMESTAMP.war"
 
                 echo "Uploading \$FILE_NAME"
 
