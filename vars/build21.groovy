@@ -55,11 +55,12 @@ def call(body) {
           	//jdk 'JAVA_HOME'
           //}
                 when {
-                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
+                    expression { !params.ROLLBACK && ( 
+						         (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
 						         (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') ||
 						         (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
-						          env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'  && env.BRANCH_NAME != 'production2' ||
-						          !params.ROLLBACK}
+						          env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'  && env.BRANCH_NAME != 'production2' )
+						        }
                 }
                 steps {
                     log("Build")
@@ -124,6 +125,9 @@ def call(body) {
                }
 
                stage('Upload with Timestamp') {
+				   when {
+    expression { !params.ROLLBACK }
+}
     steps {
         script {
             def pom = readMavenPom file: 'pom.xml'
