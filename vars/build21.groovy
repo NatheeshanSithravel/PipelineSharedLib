@@ -218,7 +218,7 @@ Please review the CodeScanner Dashboard for details.
             sh """
                 set -e
 
-                BASE_URL=${NEXUS_URL}/repository/${REPO}/${params.ROLLBACK_FILE}
+                BASE_URL=${NEXUS_URL}/repository/${REPO}
 
                 echo "Downloading ${params.ROLLBACK_FILE}"
 
