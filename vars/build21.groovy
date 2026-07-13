@@ -214,15 +214,21 @@ Please review the CodeScanner Dashboard for details.
         expression { params.ROLLBACK }
     }
     steps {
-        sh '''
-        set -e
+        script {
+            sh """
+                set -e
 
-        BASE_URL=$NEXUS_URL/repository/$REPO/${params.ROLLBACK_FILE}
+                BASE_URL=${NEXUS_URL}/repository/${REPO}/${params.ROLLBACK_FILE}
 
-        curl -f -u $CREDS \
-             -o rollback.war \
-             "$BASE_URL/$ROLLBACK_FILE"
-        '''
+                echo "Downloading ${params.ROLLBACK_FILE}"
+
+                curl -f -u ${CREDS} \
+                    -o rollback.war \
+                    "\${BASE_URL}/${params.ROLLBACK_FILE}"
+
+                ls -lh rollback.war
+            """
+        }
     }
 }
           
