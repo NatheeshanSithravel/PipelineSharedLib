@@ -269,7 +269,7 @@ Please review the CodeScanner Dashboard for details.
 
                 sh """
                     mkdir -p target
-                    cp rollback.war target/${params.ROLLBACK_FILE}
+                    cp rollback.war target/${pom.artifactId}.war
                 """
 
                 deploy(pipelineParams.deployEnv ?: env.BRANCH_NAME, pipelineParams, null)
