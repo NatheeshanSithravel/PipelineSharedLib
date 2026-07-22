@@ -55,11 +55,12 @@ def call(body) {
           	//jdk 'JAVA_HOME'
           //}
                 when {
-                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
+                    expression { !params.ROLLBACK && ( 
+						         (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
 						         (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') ||
 						         (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
-						          env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'  && env.BRANCH_NAME != 'production2' ||
-						          !params.ROLLBACK}
+						          env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr'  && env.BRANCH_NAME != 'production2' )
+						        }
                 }
                 steps {
                     log("Build")
@@ -124,6 +125,9 @@ def call(body) {
                }
 
                stage('Upload with Timestamp') {
+				   when {
+    expression { !params.ROLLBACK }
+}
     steps {
         script {
             def pom = readMavenPom file: 'pom.xml'
@@ -135,7 +139,7 @@ def call(body) {
                 BASE_URL=$NEXUS_URL/repository/$REPO/${pipelineParams.projectName}
 
                 TIMESTAMP=\$(date +"%Y-%m-%d_%H-%M-%S")
-                FILE_NAME="${pipelineParams.projectName}-\$TIMESTAMP.war"
+                FILE_NAME="${pom.artifactId}-\$TIMESTAMP.war"
 
                 echo "Uploading \$FILE_NAME"
 
@@ -204,22 +208,7 @@ Please review the CodeScanner Dashboard for details.
         }
     }
 }         */ 
-            stage('Download Rollback Artifact') {
-    when {
-        expression { params.ROLLBACK }
-    }
-    steps {
-        sh '''
-        set -e
-
-        BASE_URL=$NEXUS_URL/repository/$REPO/${pipelineParams.projectName}
-
-        curl -f -u $CREDS \
-             -o rollback.war \
-             "$BASE_URL/$ROLLBACK_FILE"
-        '''
-    }
-}
+          
           
             stage('Publish') {
                 when {
@@ -239,43 +228,25 @@ Please review the CodeScanner Dashboard for details.
                 }
             }
             stage('Deploy') {
-    when {
-        expression {
-            (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
-            (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') ||
-            (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
-            (env.BRANCH_NAME != 'production' &&
-             env.BRANCH_NAME != 'dr' &&
-             env.BRANCH_NAME != 'production2')
-        }
-    }
-
-    steps {
-        script {
-
-            if (params.ROLLBACK) {
-                echo "Deploying rollback artifact..."
-
-                sh """
-                    mkdir -p target
-                    cp rollback.war target/${getArtifactName(pipelineParams)}
-                """
-
-                deploy(pipelineParams.deployEnv ?: env.BRANCH_NAME, pipelineParams, null)
-
-            } else {
-
-                def pom = null
-
-                if (pipelineParams.build_env != 'grunt') {
-                    pom = readMavenPom file: 'pom.xml'
+                when {
+                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
+						         (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') ||
+						         (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
+						          env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr' && env.BRANCH_NAME != 'production2' }
                 }
-
-                deploy(pipelineParams.deployEnv ?: env.BRANCH_NAME, pipelineParams, pom)
+                steps {
+                    script {
+                       if ( pipelineParams.build_env != 'grunt'){
+                        pom = readMavenPom file: 'pom.xml'
+                       }
+                      def deployEnv = pipelineParams.deployEnv ?: env.BRANCH_NAME
+					  deploy(deployEnv, pipelineParams, pom)
+                    }
+                    // deploy(env.BRANCH_NAME, pipelineParams, pom)
+                  	
+                }
             }
         }
-    }
-}
         post {
             failure {
                 jiraUpdate(params.ISSUE_KEY, 31, env, currentBuild)
