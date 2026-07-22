@@ -16,7 +16,8 @@ def call(body) {
         environment {
         NEXUS_URL = "http://192.168.56.103:8081"
         REPO = "raw-war-backup"
-        CREDS = "admin:admin"
+        // CREDS = "admin:admin"
+		CREDS = credentials('nexus-cred')
         }
       	options {
     		buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '15'))
