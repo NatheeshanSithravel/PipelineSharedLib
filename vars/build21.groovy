@@ -208,7 +208,29 @@ Please review the CodeScanner Dashboard for details.
         }
     }
 }         */ 
-          
+
+            stage('Download Rollback Artifact') {
+    when {
+        expression { params.ROLLBACK }
+    }
+    steps {
+        script {
+            sh """
+                set -e
+
+                BASE_URL=${NEXUS_URL}/repository/${REPO}/${pipelineParams.projectName}
+
+                echo "Downloading ${params.ROLLBACK_FILE}"
+
+                curl -f -u ${CREDS} \
+                    -o rollback.war \
+                    "\${BASE_URL}/${params.ROLLBACK_FILE}"
+
+                ls -lh rollback.war
+            """
+        }
+    }
+}
           
             stage('Publish') {
                 when {
@@ -228,25 +250,45 @@ Please review the CodeScanner Dashboard for details.
                 }
             }
             stage('Deploy') {
-                when {
-                    expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
-						         (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') ||
-						         (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
-						          env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr' && env.BRANCH_NAME != 'production2' }
+    when {
+        expression {
+            (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
+            (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') ||
+            (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
+            (env.BRANCH_NAME != 'production' &&
+             env.BRANCH_NAME != 'dr' &&
+             env.BRANCH_NAME != 'production2')
+        }
+    }
+
+    steps {
+        script {
+
+            if (params.ROLLBACK) {
+                echo "Deploying rollback artifact..."
+
+                sh """
+                    mkdir -p target
+                    cp rollback.war target/${params.ROLLBACK_FILE}
+                """
+
+                deploy(pipelineParams.deployEnv ?: env.BRANCH_NAME, pipelineParams, null)
+
+            } else {
+
+                def pom = null
+
+                if (pipelineParams.build_env != 'grunt') {
+                    pom = readMavenPom file: 'pom.xml'
                 }
-                steps {
-                    script {
-                       if ( pipelineParams.build_env != 'grunt'){
-                        pom = readMavenPom file: 'pom.xml'
-                       }
-                      def deployEnv = pipelineParams.deployEnv ?: env.BRANCH_NAME
-					  deploy(deployEnv, pipelineParams, pom)
-                    }
-                    // deploy(env.BRANCH_NAME, pipelineParams, pom)
-                  	
-                }
+
+                deploy(pipelineParams.deployEnv ?: env.BRANCH_NAME, pipelineParams, pom)
             }
         }
+    }
+}
+        }
+
         post {
             failure {
                 jiraUpdate(params.ISSUE_KEY, 31, env, currentBuild)
