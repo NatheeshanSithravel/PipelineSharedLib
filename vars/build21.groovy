@@ -268,9 +268,21 @@ Please review the CodeScanner Dashboard for details.
             if (params.ROLLBACK) {
                 echo "Deploying rollback artifact..."
 
+                def warName = sh(
+                    script: '''
+                        mvn help:evaluate \
+                          -Dexpression=project.build.finalName \
+                          -q \
+                          -DforceStdout
+                    ''',
+                    returnStdout: true
+                ).trim()
+
+                echo "Final WAR Name: ${warName}.war"
+
                 sh """
                     mkdir -p target
-                    cp rollback.war target/${pom.artifactId}.war
+                    cp rollback.war target/${warName}.war
                 """
 
                 deploy(pipelineParams.deployEnv ?: env.BRANCH_NAME, pipelineParams, null)
@@ -287,6 +299,7 @@ Please review the CodeScanner Dashboard for details.
             }
         }
     }
+}
 }
         }
 
