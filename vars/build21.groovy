@@ -262,33 +262,32 @@ Please review the CodeScanner Dashboard for details.
         }
     }
 
-    steps {
-        script {
+   steps {
+    script {
 
-            if (params.ROLLBACK) {
-                echo "Deploying rollback artifact..."
+        def pom = null
 
-                sh """
-                    mkdir -p target
-                    cp rollback.war target/${pom.artifactId}.war
-                """
+        if (pipelineParams.build_env != 'grunt') {
+            pom = readMavenPom file: 'pom.xml'
+        }
 
-                deploy(pipelineParams.deployEnv ?: env.BRANCH_NAME, pipelineParams, null)
+        if (params.ROLLBACK) {
+            echo "Deploying rollback artifact..."
 
-            } else {
+            def warName = pom.build?.finalName ?: "${pom.artifactId}-${pom.version}"
 
-                def pom = null
+            sh """
+                mkdir -p target
+                cp rollback.war target/${warName}.war
+            """
 
-                if (pipelineParams.build_env != 'grunt') {
-                    pom = readMavenPom file: 'pom.xml'
-                }
+            deploy(pipelineParams.deployEnv ?: env.BRANCH_NAME, pipelineParams, null)
 
-                deploy(pipelineParams.deployEnv ?: env.BRANCH_NAME, pipelineParams, pom)
-            }
+        } else {
+            deploy(pipelineParams.deployEnv ?: env.BRANCH_NAME, pipelineParams, pom)
         }
     }
 }
-        }
 
         post {
             failure {
