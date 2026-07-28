@@ -252,43 +252,46 @@ Please review the CodeScanner Dashboard for details.
             }
             stage('Deploy') {
     when {
-        expression {
-            (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
-            (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') ||
-            (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
-            (env.BRANCH_NAME != 'production' &&
-             env.BRANCH_NAME != 'dr' &&
-             env.BRANCH_NAME != 'production2')
+        expression { (params.PRODUCTION_BUILD == true && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
+						        (params.PRODUCTION_BUILD == true && params.PASSWORD == 'WLpr0d*' && pipelineParams.platform == 'weblogic') ||
+						        (env.BRANCH_NAME == 'dr' && params.PASSWORD == 'm0bitel#123' && pipelineParams.platform != 'weblogic') ||
+						        env.BRANCH_NAME != 'production' && env.BRANCH_NAME != 'dr' && env.BRANCH_NAME != 'production2'  
+             }
+    }
+
+    steps {
+        script {
+            def pom = null
+
+            if (pipelineParams.build_env != 'grunt') {
+                pom = readMavenPom file: 'pom.xml'
+            }
+
+            if (params.ROLLBACK) {
+                echo "Deploying rollback artifact..."
+
+                def warName = pom.build?.finalName ?: "${pom.artifactId}-${pom.version}"
+
+                sh """
+                    mkdir -p target
+                    cp rollback.war target/${warName}.war
+                """
+
+                deploy(pipelineParams.deployEnv ?: env.BRANCH_NAME, pipelineParams, null)
+            } else {
+                deploy(pipelineParams.deployEnv ?: env.BRANCH_NAME, pipelineParams, pom)
+            }
         }
     }
 
-   steps {
-    script {
-
-        def pom = null
-
-        if (pipelineParams.build_env != 'grunt') {
-            pom = readMavenPom file: 'pom.xml'
+    post {
+        failure {
+            jiraUpdate(params.ISSUE_KEY, 31, env, currentBuild)
         }
-
-        if (params.ROLLBACK) {
-            echo "Deploying rollback artifact..."
-
-            def warName = pom.build?.finalName ?: "${pom.artifactId}-${pom.version}"
-
-            sh """
-                mkdir -p target
-                cp rollback.war target/${warName}.war
-            """
-
-            deploy(pipelineParams.deployEnv ?: env.BRANCH_NAME, pipelineParams, null)
-
-        } else {
-            deploy(pipelineParams.deployEnv ?: env.BRANCH_NAME, pipelineParams, pom)
+        success {
+            jiraUpdate(params.ISSUE_KEY, 21, env, currentBuild)
         }
     }
-}
-			
 }
         post {
             failure {
