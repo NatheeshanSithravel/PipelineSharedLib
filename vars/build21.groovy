@@ -288,7 +288,8 @@ Please review the CodeScanner Dashboard for details.
         }
     }
 }
-
+			
+}
         post {
             failure {
                 jiraUpdate(params.ISSUE_KEY, 31, env, currentBuild)
